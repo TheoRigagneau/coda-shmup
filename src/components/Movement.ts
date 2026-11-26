@@ -19,6 +19,7 @@ export default class Movement implements IComponent {
     public get speed(): number {
         return this._speed;
     }
+    
 
     public moveHorizontally(entity: Entity, deltaTime: number) {
         if (!this.enabled)
