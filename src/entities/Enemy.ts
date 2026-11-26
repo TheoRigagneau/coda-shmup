@@ -3,6 +3,8 @@ import Entity from './Entity.ts';
 import Health from "../components/Health.ts";
 import Movement from "../components/Movement.ts";
 import Weapon from "../components/Weapon.ts";
+import GameConstants from '../GameConstants.ts';
+import Experience from "../components/Experience.ts";
 
 export default class Enemy extends Entity {
     private readonly _bulletData: BulletData = {
@@ -14,12 +16,16 @@ export default class Enemy extends Entity {
     };
     private _shootTimerConfig: Phaser.Types.Time.TimerEventConfig;
     private _shootTimer: Phaser.Time.TimerEvent;
+    private _target: Entity;
+    private readonly _directionToTarget : Phaser.Math.Vector2 = new Phaser.Math.Vector2();
 
-    public init(bulletsGroup: Phaser.Physics.Arcade.Group) {
+    public init(bulletsGroup: Phaser.Physics.Arcade.Group, target: Entity) {
+        this._target = target ;
         this.addComponent(new Health(1, this));
         this.addComponent(new Movement(0.2));
         this.addComponent(new Weapon(bulletsGroup, this._bulletData));
 
+        this.getComponent(Weapon)!.enabled = false;
         // Listen once per enemy, not on every enable(): pooled enemies are reused many times
         const health = this.getComponent(Health);
         health?.on(Health.CHANGE_EVENT, () => {
@@ -40,7 +46,14 @@ export default class Enemy extends Entity {
             });
         });
 
-        this.angle = 90;
+        if (this.getComponent(Weapon)?.enabled) {
+            this._shootTimerConfig = {
+                delay: Phaser.Math.Between(2000, 3000),
+                callback: this.shoot,
+                callbackScope: this,
+                loop: true
+            }
+        }
 
         this._shootTimerConfig = {
             delay: Phaser.Math.Between(2000, 3000),
@@ -64,11 +77,12 @@ export default class Enemy extends Entity {
         }
 
         this.arcadeBody.setCircle(this.displayWidth / 2);
+        (window as any).enemyMove = this.getComponent(Movement);
     }
 
     public enable(x: number, y: number) {
-        this.enableBody(true, x, y - this.displayHeight, true, true);
-        this._shootTimer.reset(this._shootTimerConfig);
+        this.enableBody(true, x, y, true, true);
+        this._shootTimer?.reset(this._shootTimerConfig);
 
         // Restore health, in case the enemy is reused from the pool, without emitting events
         const health = this.getComponent(Health);
@@ -80,7 +94,8 @@ export default class Enemy extends Entity {
         this.removeAllListeners(Phaser.Animations.Events.ANIMATION_COMPLETE);
 
         this.disableBody(true, true);
-        this._shootTimer.paused = true;
+        if (this._shootTimer)
+            this._shootTimer.paused = true;
     }
 
     private shoot() {
@@ -96,14 +111,22 @@ export default class Enemy extends Entity {
     preUpdate(timeSinceLaunch: number, deltaTime: number) {
         super.preUpdate(timeSinceLaunch, deltaTime)
 
-        // Destroy entities when out of screen
-        if (this.y > this.scene.cameras.main.height + this.displayHeight) {
-            this.disable();
-        }
+        this._directionToTarget.set(this._target.x - this.x,
+            this._target.y - this.y).normalize();
+
+        this.rotation = this._directionToTarget.angle();
+
+        const playerSpeed: number = this._target.getComponent(Movement)?.speed ?? 0;
+        const enemyLevel = (window as any).playerLevel ?? 1;
+
+        const levelMultiplier = Math.pow(1.1, enemyLevel - 1);
+        const newSpeed = 0.6 * GameConstants.ENEMY_SPEED_RATIO * levelMultiplier;
+
+        this.getComponent(Movement)?.setSpeed(newSpeed);
 
         if (!this.isTinted)
-            this.getComponent(Movement)?.moveVertically(this, deltaTime);
+            this.getComponent(Movement)?.move(this, this._directionToTarget, deltaTime);
         else
-            this.getComponent(Movement)?.moveVertically(this, deltaTime * 0.5);
+            this.getComponent(Movement)?.move(this, this._directionToTarget, deltaTime * 0.5);
     }
 }
