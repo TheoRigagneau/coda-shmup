@@ -10,6 +10,7 @@ export default class Weapon implements IComponent {
     private readonly _bullets: Physics.Arcade.Group;
     private readonly _bulletData: BulletData;
 
+    private _fireRateMultiplier: number = 1;
     private _projectileCount: number = 1;
     private _bounceCount: number = 0;
     private _piercing: boolean = false;
@@ -42,6 +43,10 @@ export default class Weapon implements IComponent {
 
     public enablePiercing(): void {
         this._piercing = true;
+    }
+
+    public increaseFireRate(multiplier: number = 1.2): void {
+        this._fireRateMultiplier *= multiplier;
     }
 
     public shoot(

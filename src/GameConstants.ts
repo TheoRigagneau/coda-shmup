@@ -15,12 +15,12 @@ export default class GameConstants {
     public static readonly Experience = Object.freeze({
     // XP pour passer du niveau N au niveau N+1 = BASE_XP_TO_LEVEL + XP_PER_LEVEL_INCREASE * (N - 1)
     BASE_XP_TO_LEVEL: 5,
-    XP_GROWTH_FACTOR: 1.4,
+    XP_GROWTH_FACTOR: 1.2,
 } as const);
 
     public static readonly MAX_SCORE_DIGITS: number = 6;
 
-    public static readonly ARENA_WIDTH: number = 3400;
-    public static readonly ARENA_HEIGHT: number = 4700;
+    public static readonly ARENA_WIDTH: number = 8100;
+    public static readonly ARENA_HEIGHT: number = 10050;
     public static readonly ENEMY_SPEED_RATIO: number = 0.33;
 }

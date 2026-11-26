@@ -10,8 +10,8 @@ import SaveManager from "./managers/SaveManager.ts";
 // https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
 const config: Types.Core.GameConfig = {
     type: AUTO,
-    width: 1080,
-    height: 1920,
+    width: 3840,
+    height: 2160,
     parent: 'game-container',
     backgroundColor: '#000',
     scale: {

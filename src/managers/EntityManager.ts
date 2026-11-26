@@ -28,6 +28,8 @@ export default class EntityManager extends Plugins.ScenePlugin {
     private _enemyBullets: Physics.Arcade.Group;
     private readonly _spawnOffset: Phaser.Math.Vector2 
     = new Phaser.Math.Vector2;
+    private _gameStartTime: number = 0;
+    private _totalSpawnedEnemies: number = 0;
 
     constructor(scene: Scene, pluginManager: Plugins.PluginManager) {
         super(scene, pluginManager, EntityManager.PLUGIN_KEY);
@@ -73,9 +75,9 @@ export default class EntityManager extends Plugins.ScenePlugin {
             }
         });
 
-        this._player.setTarget(this._enemies);
+        this._gameStartTime = this.scene!.time.now;
+        this._totalSpawnedEnemies = 0;
 
-        // Spawn enemies indefinitely
         this.scene!.time.addEvent({
             delay: 500,
             callback: this.spawnEnemy,
@@ -141,7 +143,7 @@ export default class EntityManager extends Plugins.ScenePlugin {
     }
 
     private spawnEnemy() {
-        if (this._enemies.countActive(true) >= 50) {
+        if (this._enemies.countActive(true) >= 80) {
             return;
         }
 
@@ -150,11 +152,21 @@ export default class EntityManager extends Plugins.ScenePlugin {
             return;
         }
 
+        this._totalSpawnedEnemies++;
         const view = this.scene!.cameras.main.worldView;
         const spawnRadius = Phaser.Math.Distance.Between(view.centerX, view.centerY, 
             view.right, view.top) + 128;
             Phaser.Math.RandomXY(this._spawnOffset, spawnRadius);
-            enemy.enable(view.centerX + this._spawnOffset.x, view.centerY + this._spawnOffset.y);
+
+            const elapsedMinutes =
+            (this.scene!.time.now - this._gameStartTime) / 60000;
+
+            const timeBonus = Math.floor(elapsedMinutes / 2);
+            const spawnBonus = Math.floor(this._totalSpawnedEnemies / 30);
+
+            const enemyHealth = 1 + timeBonus + spawnBonus;
+
+            enemy.enable(view.centerX + this._spawnOffset.x, view.centerY + this._spawnOffset.y, enemyHealth);
         
             this.game!.events.emit(GameConstants.Events.ENEMY_SPAWNED_EVENT, enemy);
 

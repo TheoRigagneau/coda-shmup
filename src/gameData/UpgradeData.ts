@@ -84,7 +84,21 @@ export const UPGRADES: Upgrade[] = [
         description: "+1 ennemi traversé",
         rarity: "LEGENDARY",
         weight: 1
-    }
+    },
+    {
+        id: "fire_rate",
+        name: "Tir rapide",
+        description: "+20 % de cadence de tir",
+        rarity: "RARE",
+        weight: 1
+    },
+    {
+        id: "extra_projectile",
+        name: "Projectile supplémentaire",
+        description: "+1 projectile à chaque tir",
+        rarity: "EPIC",
+        weight: 1
+    },
 ];
 
 export function getRandomUpgrades(

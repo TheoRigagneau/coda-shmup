@@ -80,13 +80,11 @@ export default class Enemy extends Entity {
         (window as any).enemyMove = this.getComponent(Movement);
     }
 
-    public enable(x: number, y: number) {
+    public enable(x: number, y: number, maxHealth: number = 1) {
         this.enableBody(true, x, y, true, true);
         this._shootTimer?.reset(this._shootTimerConfig);
 
-        // Restore health, in case the enemy is reused from the pool, without emitting events
-        const health = this.getComponent(Health);
-        health?.heal(health!.max, false);
+        this.getComponent(Health)?.setMax(maxHealth, true);
     }
 
     public disable() {

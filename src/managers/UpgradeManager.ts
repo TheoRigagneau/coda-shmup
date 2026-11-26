@@ -62,6 +62,13 @@ export default class UpgradeManager {
             case "piercing_bullets":
                 this._player.getComponent(Weapon)?.enablePiercing();
                 break;
+            case "fire_rate":
+                this._player.increaseFireRate(1.8);
+                break;
+
+            case "extra_projectile":
+                this._player.getComponent(Weapon)?.addProjectile(1);
+                break;
 
             default:
                 console.warn(`Upgrade inconnu : ${upgrade.id}`);

@@ -25,14 +25,25 @@ export default class Player extends Entity {
     private _lastShotTime: number;
     private readonly _moveDirection: Phaser.Math.Vector2 = new Phaser.Math.Vector2();
     private readonly _shootDirection: Phaser.Math.Vector2 = new Phaser.Math.Vector2();
-    private _targets: Phaser.Physics.Arcade.Group;
     private _upgradeManager: UpgradeManager;
+    private _moveKeys: {
+        up: Phaser.Input.Keyboard.Key;
+        down: Phaser.Input.Keyboard.Key;
+        left: Phaser.Input.Keyboard.Key;
+        right: Phaser.Input.Keyboard.Key;
+    };
+    
     constructor(scene: Scene, x: number, y: number) {
         super(scene, x, y, 'sprites');
 
         if (this.scene.input.keyboard) {
             this._cursorKeys = this.scene.input.keyboard.createCursorKeys();
-
+            this._moveKeys = this.scene.input.keyboard.addKeys({
+            up: Phaser.Input.Keyboard.KeyCodes.Z,
+            down: Phaser.Input.Keyboard.KeyCodes.S,
+            left: Phaser.Input.Keyboard.KeyCodes.Q,
+            right: Phaser.Input.Keyboard.KeyCodes.D
+        }) as typeof this._moveKeys;
             this.scene.input.keyboard.addKey(Input.Keyboard.KeyCodes.ONE).on('down', () => this.selectPlayerShip(1));
             this.scene.input.keyboard.addKey(Input.Keyboard.KeyCodes.TWO).on('down', () => this.selectPlayerShip(2));
             this.scene.input.keyboard.addKey(Input.Keyboard.KeyCodes.THREE).on('down', () => this.selectPlayerShip(3));
@@ -70,20 +81,51 @@ export default class Player extends Entity {
     }
 
     public selectPlayerShip(playerShipDataId: number) {
+
+        const requiredLevels: { [key: number]: number } = {
+            1: 1,
+            2: 5,
+            3: 10
+        };
+
+        const requiredLevel = requiredLevels[playerShipDataId];
+
+        if (requiredLevel === undefined) {
+            console.warn("Vaisseau inconnu :", playerShipDataId);
+            return;
+        }
+
+        const playerLevel = this.getComponent(Experience)?.level ?? 1;
+
+        if (playerLevel < requiredLevel) {
+            console.log(
+                `Vaisseau ${playerShipDataId} verrouillé ! Niveau ${requiredLevel} requis.`
+            );
+            return;
+        }
         const playerShipsData = this.scene.cache.json.get('playerShips') as PlayerShipsData;
         this._playerShipData = playerShipsData[playerShipDataId];
 
         this.setTexture('sprites', this._playerShipData.texture);
-        const bodyData = this._playerShipData.body;
-        this.arcadeBody.setCircle(bodyData.radius, bodyData.offsetX, bodyData.offsetY);
 
-        this.getComponent(Movement)?.setSpeed(this._playerShipData.movementSpeed);
+        const bodyData = this._playerShipData.body;
+
+        this.arcadeBody.setCircle(
+            bodyData.radius,
+            bodyData.offsetX,
+            bodyData.offsetY
+        );
+
+        this.getComponent(Movement)?.setSpeed(
+            this._playerShipData.movementSpeed
+        );
+
+        console.log(`Vaisseau ${playerShipDataId} sélectionné !`);
     }
 
     preUpdate(timeSinceLaunch: number, deltaTime: number) {
         super.preUpdate(timeSinceLaunch, deltaTime);
 
-        // Press left or right arrow keys to move the player smoothly horizontally using deltaTime
         this._moveDirection.set(0, 0);
         if (this._cursorKeys.left.isDown)
             this._moveDirection.x -= 1;
@@ -93,45 +135,59 @@ export default class Player extends Entity {
             this._moveDirection.y -= 1;
         if (this._cursorKeys.down.isDown)
             this._moveDirection.y += 1;
+        if (this._moveKeys.left.isDown)
+            this._moveDirection.x -= 1;
+        if (this._moveKeys.right.isDown)
+            this._moveDirection.x += 1;
+        if (this._moveKeys.up.isDown)
+            this._moveDirection.y -= 1;
+        if (this._moveKeys.down.isDown)
+            this._moveDirection.y += 1;
                 
         if (this._moveDirection.lengthSq() >0) {
             this._moveDirection.normalize();
             this.getComponent(Movement)?.move(this, this._moveDirection, deltaTime);
 
-            // Face the move direction
             this.rotation = this._moveDirection.angle();
         }
 
         
 
-        // Stop player from going offscreen
         const camera = this.scene.cameras.main;
         this.x = Phaser.Math.Clamp(this.x, this.displayWidth / 2, GameConstants.ARENA_WIDTH - this.displayWidth / 2);
         this.y = Phaser.Math.Clamp(this.y, this.displayHeight / 2,GameConstants.ARENA_HEIGHT - this.displayHeight / 2);
 
-        // Press space to shoot
-        if (timeSinceLaunch - this._lastShotTime > this._rateOfFire * 1000) {
-            const nearestTarget = this.findNearestTarget();
-            if (nearestTarget) {
-                this._shootDirection.set(nearestTarget.x - this.x,
-                    nearestTarget.y - this.y).normalize();
-                this.getComponent(Weapon)?.shoot(this, this._shootDirection)
-                this.scene.sound.play('sfx_laser1');
-                this._lastShotTime = timeSinceLaunch;
-            }
+        if (this.scene.input.activePointer.isDown &&
+            timeSinceLaunch - this._lastShotTime > this._rateOfFire * 1000) {
+            const pointer = this.scene.input.activePointer;
+
+            const target = this.scene.cameras.main.getWorldPoint(
+                pointer.x,
+                pointer.y
+            );
+
+            this._shootDirection.set(
+                target.x - this.x,
+                target.y - this.y
+            ).normalize();
+
+            this.getComponent(Weapon)?.shoot(this, this._shootDirection);
+
+            this.scene.sound.play('sfx_laser1');
+
+            this._lastShotTime = timeSinceLaunch;
         }
     }
-    public setTarget (targets: Phaser.Physics.Arcade.Group) {
-        this._targets = targets;
-    }
-    private findNearestTarget(): Entity | null {
-        return this.scene.physics.closest(this,this._targets.getMatching('active', true)) as Entity | null;
-    }
+
     public applyUpgrade(upgrade: Upgrade): void {
     this._upgradeManager.apply(upgrade);
     }
 
     public getOwnedUpgradeIds(): string[] {
         return this._upgradeManager.getOwnedUpgradeIds();
+    }
+
+    public increaseFireRate(multiplier: number = 1.2): void {
+        this._rateOfFire /= multiplier;
     }
 }

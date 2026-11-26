@@ -116,8 +116,9 @@ export default class MainUIScene extends Scene {
     }
 
     private showUpgradeChoices(level: number) {
+
+        this.showShipUnlockMessage(level);
         
-        // Supprimer une éventuelle ancienne interface
         this._upgradeOverlay?.destroy(true);
 
         const centerX = this.scale.width / 2;
@@ -126,7 +127,6 @@ export default class MainUIScene extends Scene {
         this._upgradeOverlay = this.add.container(0, 0)
             .setDepth(1000);
 
-        // Fond sombre
         const background = this.add.rectangle(
             centerX,
             centerY,
@@ -252,5 +252,39 @@ export default class MainUIScene extends Scene {
         this._upgradeOverlay = undefined;
 
         this.scene.resume(GameConstants.SceneKeys.MAIN_GAME);
+    }
+
+    private showShipUnlockMessage(level: number): void {
+        const messages: { [key: number]: string } = {
+            5: "NOUVEAU VAISSEAU DEBLOQUE !\nVAISSEAU 2",
+            10: "NOUVEAU VAISSEAU DEBLOQUE !\nVAISSEAU 3"
+        };
+
+        const message = messages[level];
+
+        if (!message) return;
+
+        const text = this.add.text(
+            this.scale.width / 2,
+            100,
+            message,
+            {
+                fontFamily: "Arial",
+                fontSize: "30px",
+                color: "#ffe066",
+                align: "center",
+                stroke: "#000000",
+                strokeThickness: 5
+            }
+        ).setOrigin(0.5).setDepth(2000);
+
+        this.tweens.add({
+            targets: text,
+            alpha: 0,
+            y: 60,
+            delay: 2500,
+            duration: 1000,
+            onComplete: () => text.destroy()
+        });
     }
 }
