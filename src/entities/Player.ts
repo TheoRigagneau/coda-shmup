@@ -28,11 +28,8 @@ export default class Player extends Entity {
     private _rateOfFire: number;
     private _lastShotTime: number;
 
-    private readonly _moveDirection: Phaser.Math.Vector2 =
-        new Phaser.Math.Vector2();
-
-    private readonly _shootDirection: Phaser.Math.Vector2 =
-        new Phaser.Math.Vector2();
+    private readonly _moveDirection = new Phaser.Math.Vector2();
+    private readonly _shootDirection = new Phaser.Math.Vector2();
 
     private _upgradeManager: UpgradeManager;
 
@@ -43,7 +40,6 @@ export default class Player extends Entity {
         right: Phaser.Input.Keyboard.Key;
     };
 
-    // Couleur du skin choisi par la classe
     private _classSkinColor: string = "blue";
 
     private readonly _classSkinColors: Record<string, string> = {
@@ -64,7 +60,6 @@ export default class Player extends Entity {
                 right: Phaser.Input.Keyboard.KeyCodes.D
             }) as typeof this._moveKeys;
 
-            // Changement de vaisseau avec les touches 1, 2 et 3
             this.scene.input.keyboard
                 .addKey(Input.Keyboard.KeyCodes.ONE)
                 .on("down", () => this.selectPlayerShip(1));
@@ -80,21 +75,53 @@ export default class Player extends Entity {
     }
 
     public init(bulletsGroup: Phaser.Physics.Arcade.Group) {
-        this.addComponent(new Health(3, this));
-        this.addComponent(new Experience());
-        this.addComponent(new Movement());
-        this.addComponent(new Weapon(bulletsGroup, this._bulletData));
 
-        this._upgradeManager = new UpgradeManager(this);
-
-        // Récupération de la classe sélectionnée dans HomeScene
+        // Récupération de la classe choisie dans le menu
         const selectedClass = this.scene.registry.get(
             RegistryConstants.Keys.PLAYER_CLASS
         ) as string | undefined;
 
-        // Association classe / couleur
         this._classSkinColor =
             this._classSkinColors[selectedClass ?? ""] ?? "blue";
+
+        // BONUS DE CLASSE
+
+        // Défense : 4 PV au lieu de 3
+        const startingHealth = selectedClass === "defense" ? 4 : 3;
+
+        this.addComponent(new Health(startingHealth, this));
+
+        const experience = new Experience();
+
+        // Technicien : +30 % XP
+        experience.setGainMultiplier(
+            selectedClass === "technician" ? 1.3 : 1
+        );
+
+        this.addComponent(experience);
+
+        const movement = new Movement();
+
+        // Agilité : +30 % vitesse
+        movement.setSpeedMultiplier(
+            selectedClass === "agility" ? 1.3 : 1
+        );
+
+        this.addComponent(movement);
+
+        const weapon = new Weapon(
+            bulletsGroup,
+            this._bulletData
+        );
+
+        // Assaut : +30 % dégâts
+        weapon.setDamageMultiplier(
+            selectedClass === "assault" ? 1.3 : 1
+        );
+
+        this.addComponent(weapon);
+
+        this._upgradeManager = new UpgradeManager(this);
 
         this.angle = -90;
 
@@ -104,15 +131,18 @@ export default class Player extends Entity {
         this._rateOfFire = 0.5;
         this._lastShotTime = 0;
 
-        this.getComponent(Health)?.on(Health.CHANGE_EVENT, () => {
-            this.arcadeBody.setEnable(false);
+        this.getComponent(Health)?.on(
+            Health.CHANGE_EVENT,
+            () => {
+                this.arcadeBody.setEnable(false);
 
-            this.scene.time.delayedCall(50, () => {
-                if (this.active) {
-                    this.arcadeBody.setEnable(true);
-                }
-            });
-        });
+                this.scene.time.delayedCall(50, () => {
+                    if (this.active) {
+                        this.arcadeBody.setEnable(true);
+                    }
+                });
+            }
+        );
 
         const xp = this.getComponent(Experience)!;
 
@@ -123,9 +153,12 @@ export default class Player extends Entity {
             Experience.LEVEL_UP_EVENT,
             (level: number) => console.log("Niveau", level)
         );
+
+        console.log("Classe sélectionnée :", selectedClass);
     }
 
     public selectPlayerShip(playerShipDataId: number) {
+
         const requiredLevels: { [key: number]: number } = {
             1: 1,
             2: 5,
@@ -154,22 +187,23 @@ export default class Player extends Entity {
 
         this._playerShipData = playerShipsData[playerShipDataId];
 
-        // Construction du nom du sprite selon le vaisseau et la classe
-        // Exemple : playerShip1_red, playerShip2_green...
-        const skinName = this._playerShipData.texture.replace(
+        const skinTexture = this._playerShipData.texture.replace(
             /_blue$/,
             `_${this._classSkinColor}`
         );
 
-        const textureKey = `skin_${skinName}`;
+        // Les skins sont chargés comme textures indépendantes
+        const textureKey = `skin_${skinTexture}`;
 
         if (this.scene.textures.exists(textureKey)) {
             this.setTexture(textureKey);
+        } else if (this.scene.textures.exists(skinTexture)) {
+            this.setTexture(skinTexture);
         } else {
             console.error("Skin introuvable :", textureKey);
+            return;
         }
 
-        // Mise à jour de la hitbox
         const bodyData = this._playerShipData.body;
 
         this.arcadeBody.setCircle(
@@ -178,7 +212,6 @@ export default class Player extends Entity {
             bodyData.offsetY
         );
 
-        // Mise à jour de la vitesse
         this.getComponent(Movement)?.setSpeed(
             this._playerShipData.movementSpeed
         );
@@ -193,21 +226,17 @@ export default class Player extends Entity {
 
         this._moveDirection.set(0, 0);
 
-        if (this._moveKeys.left.isDown) {
+        if (this._moveKeys.left.isDown)
             this._moveDirection.x -= 1;
-        }
 
-        if (this._moveKeys.right.isDown) {
+        if (this._moveKeys.right.isDown)
             this._moveDirection.x += 1;
-        }
 
-        if (this._moveKeys.up.isDown) {
+        if (this._moveKeys.up.isDown)
             this._moveDirection.y -= 1;
-        }
 
-        if (this._moveKeys.down.isDown) {
+        if (this._moveKeys.down.isDown)
             this._moveDirection.y += 1;
-        }
 
         if (this._moveDirection.lengthSq() > 0) {
             this._moveDirection.normalize();
@@ -237,7 +266,8 @@ export default class Player extends Entity {
         // Tir à la souris
         if (
             this.scene.input.activePointer.isDown &&
-            timeSinceLaunch - this._lastShotTime > this._rateOfFire * 1000
+            timeSinceLaunch - this._lastShotTime >
+                this._rateOfFire * 1000
         ) {
             const pointer = this.scene.input.activePointer;
 

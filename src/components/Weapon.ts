@@ -1,3 +1,4 @@
+
 import { Physics } from "phaser";
 import { BulletData } from "../gameData/BulletData.ts";
 import Bullet, { BulletUpgradeOptions } from "../entities/Bullet.ts";
@@ -11,6 +12,7 @@ export default class Weapon implements IComponent {
     private readonly _bulletData: BulletData;
 
     private _fireRateMultiplier: number = 1;
+    private _damageMultiplier: number = 1;
     private _projectileCount: number = 1;
     private _bounceCount: number = 0;
     private _piercing: boolean = false;
@@ -24,9 +26,11 @@ export default class Weapon implements IComponent {
         }
 
         this._bullets = bullets;
-
-        // Copie locale pour ne pas modifier les données partagées.
         this._bulletData = { ...bulletData };
+    }
+
+    public setDamageMultiplier(multiplier: number): void {
+        this._damageMultiplier = multiplier;
     }
 
     public increaseDamage(amount: number = 1): void {
@@ -68,6 +72,12 @@ export default class Weapon implements IComponent {
             piercing: this._piercing
         };
 
+        // Copie des données avec le bonus de dégâts
+        const shotData: BulletData = {
+            ...this._bulletData,
+            damage: this._bulletData.damage * this._damageMultiplier
+        };
+
         for (let i = 0; i < this._projectileCount; i++) {
             const shotDirection = forward.clone()
                 .rotate(startAngle + i * spreadStep)
@@ -78,14 +88,14 @@ export default class Weapon implements IComponent {
             if (!bullet) continue;
 
             const velocity = shotDirection.clone()
-                .scale(this._bulletData.speed);
+                .scale(shotData.speed);
 
             bullet.enable(
                 source.x + shotDirection.x * source.arcadeBody.radius,
                 source.y + shotDirection.y * source.arcadeBody.radius,
                 velocity.x,
                 velocity.y,
-                this._bulletData,
+                shotData,
                 options
             );
         }

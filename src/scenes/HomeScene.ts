@@ -11,25 +11,37 @@ export default class HomeScene extends Phaser.Scene {
             id: "assault",
             name: "ASSAUT",
             skin: "red",
-            color: 0xff5555
+            color: 0xff5555,
+            bonus: "+30 % DÉGÂTS",
+            description: "Tes projectiles infligent 30 % de dégâts supplémentaires.",
+            detail: "Une classe offensive idéale pour éliminer les ennemis rapidement."
         },
         {
             id: "defense",
             name: "DÉFENSE",
             skin: "blue",
-            color: 0x55aaff
+            color: 0x55aaff,
+            bonus: "4 POINTS DE VIE",
+            description: "Tu commences la partie avec 4 PV au lieu de 3.",
+            detail: "Une classe résistante qui te permet de survivre plus longtemps."
         },
         {
             id: "agility",
             name: "AGILITÉ",
             skin: "green",
-            color: 0x55ffbb
+            color: 0x55ffbb,
+            bonus: "+30 % VITESSE",
+            description: "Ta vitesse de déplacement est augmentée de 30 %.",
+            detail: "Une classe rapide pour esquiver les attaques ennemies."
         },
         {
             id: "technician",
             name: "TECHNICIEN",
             skin: "purple",
-            color: 0xcc88ff
+            color: 0xcc88ff,
+            bonus: "+30 % EXPÉRIENCE",
+            description: "Tu gagnes 30 % d'expérience supplémentaire.",
+            detail: "Une classe spécialisée dans la progression et les améliorations."
         }
     ];
 
@@ -57,8 +69,10 @@ export default class HomeScene extends Phaser.Scene {
             progressBar.destroy();
             progressBox.destroy();
         });
+
         this.load.setPath(`${import.meta.env.BASE_URL}assets/`);
-        // Chargement des 15 sprites de vaisseaux
+
+        // Chargement des sprites de vaisseaux
         const shipColors = [
             "blue",
             "green",
@@ -88,6 +102,7 @@ export default class HomeScene extends Phaser.Scene {
             "Spritesheet/gameSprites.png",
             "Spritesheet/gameSprites.json"
         );
+
         // Chargement des skins individuels
         const ships = [1, 2, 3];
         const colors = ["blue", "green", "orange", "purple", "red"];
@@ -279,6 +294,142 @@ export default class HomeScene extends Phaser.Scene {
             );
         };
 
+        // FENÊTRE DES BONUS
+        let detailsObjects: Phaser.GameObjects.GameObject[] = [];
+
+        const closeDetails = () => {
+            detailsObjects.forEach(object => object.destroy());
+            detailsObjects = [];
+        };
+
+        
+    const showClassDetails = (playerClass: typeof classes[number]) => {
+        closeDetails();
+
+        // Fond sombre
+        const overlay = this.add.rectangle(
+            centerX,
+            centerY,
+            width,
+            height,
+            0x000000,
+            0.78
+        ).setDepth(100).setInteractive();
+
+        detailsObjects.push(overlay);
+
+        // Panneau de détails agrandi
+        const detailsPanel = this.add.graphics().setDepth(101);
+
+        detailsPanel.fillStyle(0x111832, 1);
+        detailsPanel.fillRoundedRect(
+            centerX - 600,
+            centerY - 340,
+            1200,
+            680,
+            32
+        );
+
+        detailsPanel.lineStyle(5, playerClass.color, 1);
+        detailsPanel.strokeRoundedRect(
+            centerX - 600,
+            centerY - 340,
+            1200,
+            680,
+            32
+        );
+
+        detailsObjects.push(detailsPanel);
+
+        // Nom de la classe
+        const title = this.add.text(
+            centerX,
+            centerY - 245,
+            playerClass.name,
+            {
+                fontFamily: "future",
+                fontSize: "64px",
+                color: `#${playerClass.color.toString(16).padStart(6, "0")}`
+            }
+        ).setOrigin(0.5).setDepth(102);
+
+        detailsObjects.push(title);
+
+        // Bonus principal
+        const bonus = this.add.text(
+            centerX,
+            centerY - 85,
+            playerClass.bonus,
+            {
+                fontFamily: "future",
+                fontSize: "46px",
+                color: "#ffffff",
+                align: "center"
+            }
+        ).setOrigin(0.5).setDepth(102);
+
+        detailsObjects.push(bonus);
+
+        // Description
+        const description = this.add.text(
+            centerX,
+            centerY + 35,
+            playerClass.description,
+            {
+                fontFamily: "Arial",
+                fontSize: "32px",
+                color: "#c5c8f2",
+                align: "center",
+                wordWrap: {
+                    width: 1000
+                }
+            }
+        ).setOrigin(0.5).setDepth(102);
+
+        detailsObjects.push(description);
+
+        // Description complémentaire
+        const detail = this.add.text(
+            centerX,
+            centerY + 145,
+            playerClass.detail,
+            {
+                fontFamily: "Arial",
+                fontSize: "28px",
+                color: "#929bc9",
+                align: "center",
+                wordWrap: {
+                    width: 1000
+                }
+            }
+        ).setOrigin(0.5).setDepth(102);
+
+        detailsObjects.push(detail);
+
+        // Bouton fermer
+        const closeButton = this.add.text(
+            centerX,
+            centerY + 260,
+            "FERMER",
+            {
+                fontFamily: "future",
+                fontSize: "32px",
+                color: "#ffffff",
+                backgroundColor: "#515987",
+                padding: {
+                    x: 55,
+                    y: 22
+                }
+            }
+        ).setOrigin(0.5).setDepth(103)
+            .setInteractive({ useHandCursor: true });
+
+        closeButton.on("pointerdown", closeDetails);
+
+        detailsObjects.push(closeButton);
+    };
+
+
         // CRÉATION DES QUATRE CARTES
         classes.forEach((playerClass, index) => {
             const x = firstX + index * (cardWidth + cardGap);
@@ -295,7 +446,7 @@ export default class HomeScene extends Phaser.Scene {
             cards.push(card);
 
             // VRAI SPRITE PNG
-           const shipTexture = `skin_playerShip1_${playerClass.skin}`;
+            const shipTexture = `skin_playerShip1_${playerClass.skin}`;
 
             if (this.textures.exists(shipTexture)) {
                 this.add.image(
@@ -321,7 +472,7 @@ export default class HomeScene extends Phaser.Scene {
                 }
             ).setOrigin(0.5);
 
-            // ZONE DE SÉLECTION
+            // ZONE DE SÉLECTION ET D'AFFICHAGE DES BONUS
             const zone = this.add.zone(
                 x,
                 cardY,
@@ -341,6 +492,9 @@ export default class HomeScene extends Phaser.Scene {
                         currentClass.color
                     );
                 });
+
+                // Afficher le récapitulatif de la classe
+                showClassDetails(playerClass);
             });
         });
 
@@ -400,6 +554,8 @@ export default class HomeScene extends Phaser.Scene {
                 .slice(0, 12) || "PILOTE";
 
             started = true;
+
+            closeDetails();
 
             // SAUVEGARDE DU PSEUDO
             try {
@@ -462,6 +618,7 @@ export default class HomeScene extends Phaser.Scene {
 
         // NETTOYAGE
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            closeDetails();
             form.destroy();
         });
     }
