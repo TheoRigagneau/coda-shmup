@@ -115,128 +115,145 @@ export default class MainUIScene extends Scene {
         this.drawXpBar(current / required);
     }
 
-    private showUpgradeChoices(level: number) {
+    
+private showUpgradeChoices(level: number) {
+    this.showShipUnlockMessage(level);
 
-        this.showShipUnlockMessage(level);
-        
-        this._upgradeOverlay?.destroy(true);
+    this._upgradeOverlay?.destroy(true);
 
-        const centerX = this.scale.width / 2;
-        const centerY = this.scale.height / 2;
+    const centerX = this.scale.width / 2;
+    const centerY = this.scale.height / 2;
 
-        this._upgradeOverlay = this.add.container(0, 0)
-            .setDepth(1000);
+    this._upgradeOverlay = this.add.container(0, 0)
+        .setDepth(1000);
 
-        const background = this.add.rectangle(
+    const background = this.add.rectangle(
+        centerX,
+        centerY,
+        this.scale.width,
+        this.scale.height,
+        0x000000,
+        0.85
+    );
+
+    this._upgradeOverlay.add(background);
+
+    // Titre
+    const title = this.add.text(
+        centerX,
+        centerY - 340,
+        `LEVEL ${level} UP!`,
+        {
+            fontFamily: 'future',
+            fontSize: '76px',
+            color: '#ffff00'
+        }
+    ).setOrigin(0.5);
+
+    this._upgradeOverlay.add(title);
+
+    const subtitle = this.add.text(
+        centerX,
+        centerY - 250,
+        'CHOOSE AN UPGRADE',
+        {
+            fontFamily: 'future',
+            fontSize: '38px',
+            color: '#ffffff'
+        }
+    ).setOrigin(0.5);
+
+    this._upgradeOverlay.add(subtitle);
+
+    // Trois choix de buffs agrandis
+    const upgrades = getRandomUpgrades(
+        3,
+        this._player?.getOwnedUpgradeIds() ?? []
+    );
+
+    const cardWidth = Math.min(1000, this.scale.width - 80);
+    const cardHeight = 180;
+    const spacing = 210;
+
+    upgrades.forEach((upgrade, index) => {
+        const y = centerY - spacing + index * spacing;
+        const rarity = UPGRADE_RARITIES[upgrade.rarity];
+
+        const card = this.add.rectangle(
             centerX,
-            centerY,
-            this.scale.width,
-            this.scale.height,
-            0x000000,
-            0.85
-        );
+            y,
+            cardWidth,
+            cardHeight,
+            0x292950
+        )
+            .setStrokeStyle(5, rarity.color)
+            .setInteractive({ useHandCursor: true });
 
-        this._upgradeOverlay.add(background);
-
-        // Titre
-        const title = this.add.text(
+        // Rareté
+        const rarityText = this.add.text(
             centerX,
-            centerY - 350,
-            `LEVEL ${level} UP!`,
+            y - 55,
+            rarity.label,
             {
                 fontFamily: 'future',
-                fontSize: '64px',
-                color: '#ffff00'
+                fontSize: '26px',
+                color: `#${rarity.color.toString(16).padStart(6, '0')}`
             }
         ).setOrigin(0.5);
 
-        this._upgradeOverlay.add(title);
-
-        const subtitle = this.add.text(
+        // Nom du buff
+        const nameText = this.add.text(
             centerX,
-            centerY - 240,
-            'CHOOSE AN UPGRADE',
+            y,
+            upgrade.name,
             {
                 fontFamily: 'future',
-                fontSize: '32px',
-                color: '#ffffff'
+                fontSize: '42px',
+                color: '#ffffff',
+                align: 'center',
+                wordWrap: { width: cardWidth - 60 }
             }
         ).setOrigin(0.5);
 
-        this._upgradeOverlay.add(subtitle);
+        // Description
+        const descriptionText = this.add.text(
+            centerX,
+            y + 58,
+            upgrade.description,
+            {
+                fontFamily: 'future',
+                fontSize: '23px',
+                color: '#cccccc',
+                align: 'center',
+                wordWrap: { width: cardWidth - 60 }
+            }
+        ).setOrigin(0.5);
 
-        // Trois choix temporaires
-        
-        const upgrades = getRandomUpgrades(3,
-            this._player?.getOwnedUpgradeIds() ?? []);
-
-                upgrades.forEach((upgrade, index) => {
-            const y = centerY - 100 + index * 180;
-            const rarity = UPGRADE_RARITIES[upgrade.rarity];
-
-            const card = this.add.rectangle(
-                centerX,
-                y,
-                650,
-                130,
-                0x292950
-            )
-                .setStrokeStyle(4, rarity.color)
-                .setInteractive({ useHandCursor: true });
-
-            const rarityText = this.add.text(
-                centerX,
-                y - 35,
-                rarity.label,
-                {
-                    fontFamily: 'future',
-                    fontSize: '20px',
-                    color: `#${rarity.color.toString(16).padStart(6, '0')}`
-                }
-            ).setOrigin(0.5);
-
-            const nameText = this.add.text(
-                centerX,
-                y,
-                upgrade.name,
-                {
-                    fontFamily: 'future',
-                    fontSize: '30px',
-                    color: '#ffffff'
-                }
-            ).setOrigin(0.5);
-
-            const descriptionText = this.add.text(
-                centerX,
-                y + 35,
-                upgrade.description,
-                {
-                    fontFamily: 'future',
-                    fontSize: '18px',
-                    color: '#cccccc'
-                }
-            ).setOrigin(0.5);
-
-            card.on('pointerover', () => {
-                card.setFillStyle(0x5555aa);
-            });
-
-            card.on('pointerout', () => {
-                card.setFillStyle(0x292950);
-            });
-
-            card.on('pointerdown', () => {
-                this.selectUpgrade(upgrade);
-            });
-
-            this._upgradeOverlay!.add([
-                card,
-                rarityText,
-                nameText,
-                descriptionText
-            ]);
+        // Effet au survol
+        card.on('pointerover', () => {
+            card.setFillStyle(0x5555aa);
+            card.setStrokeStyle(7, rarity.color);
         });
-    }
+
+        card.on('pointerout', () => {
+            card.setFillStyle(0x292950);
+            card.setStrokeStyle(5, rarity.color);
+        });
+
+        // Sélection du buff
+        card.on('pointerdown', () => {
+            this.selectUpgrade(upgrade);
+        });
+
+        this._upgradeOverlay!.add([
+            card,
+            rarityText,
+            nameText,
+            descriptionText
+        ]);
+    });
+}
+
 
     private selectUpgrade(upgrade: Upgrade) {
         console.log("Upgrade selected:", upgrade);
