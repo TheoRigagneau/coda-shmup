@@ -13,6 +13,11 @@ const config: Types.Core.GameConfig = {
     width: 3840,
     height: 2160,
     parent: 'game-container',
+    
+    dom: {
+        createContainer: true
+    },
+
     backgroundColor: '#000',
     scale: {
         mode: Scale.FIT,
