@@ -1,0 +1,23 @@
+{
+  "spawnIntervalMs": 5000,
+  "maxActive": 3,
+  "texture": "playerShip3_blue",
+  "movement": {
+    "verticalSpeed": 0.2,
+    "horizontalAmplitude": 120,
+    "horizontalFrequency": 0.003
+  },
+  "weapon": {
+    "cooldownMinMs": 2000,
+    "cooldownMaxMs": 3000,
+    "bulletCount": 3,
+    "spreadAngleDegrees": 30,
+    "bullet": {
+      "width": 12,
+      "height": 12,
+      "color": 15884124,
+      "speed": 512,
+      "damage": 1
+    }
+  }
+}
