@@ -12,6 +12,7 @@ import RegistryConstants from "../RegistryConstants.ts";
 export default class EntityManager extends Plugins.ScenePlugin {
     public static readonly PLUGIN_KEY: string = 'EntityManager';
     public static readonly MAPPING_NAME: string = 'entityManager';
+    private static readonly MAX_ACTIVE_SINUSOIDAL_ENEMIES: number = 3;
 
     // noinspection JSUnusedGlobalSymbols
     private readonly bulletGroupConfig = {
@@ -72,7 +73,7 @@ export default class EntityManager extends Plugins.ScenePlugin {
         this._sinusoidalEnemies = this.scene!.physics.add.group({
             classType: SinusoidalEnemy,
             defaultKey: "sprites",
-            defaultFrame: sinusoidalEnemyData.texture,
+            defaultFrame: SinusoidalEnemy.TEXTURE,
             createCallback: (enemy) => {
                 (enemy as SinusoidalEnemy).init(sinusoidalEnemyData, this._enemyBullets);
             }
@@ -164,7 +165,7 @@ export default class EntityManager extends Plugins.ScenePlugin {
 
     private spawnSinusoidalEnemy(): void {
         const data = this.scene!.cache.json.get("sinusoidalEnemy") as SinusoidalEnemyData;
-        if (this._sinusoidalEnemies.countActive(true) >= data.maxActive)
+        if (this._sinusoidalEnemies.countActive(true) >= EntityManager.MAX_ACTIVE_SINUSOIDAL_ENEMIES)
             return;
 
         const enemy = this._sinusoidalEnemies.get() as SinusoidalEnemy;

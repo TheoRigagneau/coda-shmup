@@ -1,10 +1,23 @@
 import Health from "../components/Health.ts";
 import Movement from "../components/Movement.ts";
 import Weapon from "../components/Weapon.ts";
+import type {BulletData} from "../gameData/BulletData.ts";
 import type {SinusoidalEnemyData} from "../gameData/SinusoidalEnemyData.ts";
 import Entity from "./Entity.ts";
 
 export default class SinusoidalEnemy extends Entity {
+    public static readonly TEXTURE: string = "playerShip3_blue";
+
+    private static readonly BULLET_DATA: BulletData = {
+        width: 12,
+        height: 12,
+        color: 0xf25f5c,
+        speed: 512,
+        damage: 1
+    };
+    private static readonly MIN_SHOOT_COOLDOWN_MS: number = 2000;
+    private static readonly MAX_SHOOT_COOLDOWN_MS: number = 3000;
+
     private _data: SinusoidalEnemyData;
     private _shootTimer?: Phaser.Time.TimerEvent;
     private _baseX: number = 0;
@@ -12,11 +25,11 @@ export default class SinusoidalEnemy extends Entity {
 
     public init(data: SinusoidalEnemyData, bulletsGroup: Phaser.Physics.Arcade.Group): void {
         this._data = data;
-        this.setTexture("sprites", data.texture);
+        this.setTexture("sprites", SinusoidalEnemy.TEXTURE);
 
         this.addComponent(new Health(1, this));
         this.addComponent(new Movement(data.movement.verticalSpeed));
-        this.addComponent(new Weapon(bulletsGroup, data.weapon.bullet));
+        this.addComponent(new Weapon(bulletsGroup, SinusoidalEnemy.BULLET_DATA));
 
         this.getComponent(Health)?.on(Health.CHANGE_EVENT, () => {
             this.setTintFill(0xffffff);
@@ -73,8 +86,8 @@ export default class SinusoidalEnemy extends Entity {
 
     private scheduleNextShot(): void {
         const delay: number = Phaser.Math.Between(
-            this._data.weapon.cooldownMinMs,
-            this._data.weapon.cooldownMaxMs
+            SinusoidalEnemy.MIN_SHOOT_COOLDOWN_MS,
+            SinusoidalEnemy.MAX_SHOOT_COOLDOWN_MS
         );
         this._shootTimer = this.scene.time.delayedCall(delay, this.shoot, [], this);
     }
