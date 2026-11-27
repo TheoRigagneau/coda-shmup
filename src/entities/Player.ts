@@ -37,7 +37,6 @@ export default class Player extends Entity {
         super(scene, x, y, 'sprites');
 
         if (this.scene.input.keyboard) {
-            this._cursorKeys = this.scene.input.keyboard.createCursorKeys();
             this._moveKeys = this.scene.input.keyboard.addKeys({
             up: Phaser.Input.Keyboard.KeyCodes.Z,
             down: Phaser.Input.Keyboard.KeyCodes.S,
@@ -127,14 +126,6 @@ export default class Player extends Entity {
         super.preUpdate(timeSinceLaunch, deltaTime);
 
         this._moveDirection.set(0, 0);
-        if (this._cursorKeys.left.isDown)
-            this._moveDirection.x -= 1;
-        if (this._cursorKeys.right.isDown)
-            this._moveDirection.x += 1;
-        if (this._cursorKeys.up.isDown)
-            this._moveDirection.y -= 1;
-        if (this._cursorKeys.down.isDown)
-            this._moveDirection.y += 1;
         if (this._moveKeys.left.isDown)
             this._moveDirection.x -= 1;
         if (this._moveKeys.right.isDown)
