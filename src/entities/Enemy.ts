@@ -4,7 +4,6 @@ import Health from "../components/Health.ts";
 import Movement from "../components/Movement.ts";
 import Weapon from "../components/Weapon.ts";
 import GameConstants from '../GameConstants.ts';
-import Experience from "../components/Experience.ts";
 
 export default class Enemy extends Entity {
     private readonly _bulletData: BulletData = {
@@ -114,7 +113,6 @@ export default class Enemy extends Entity {
 
         this.rotation = this._directionToTarget.angle();
 
-        const playerSpeed: number = this._target.getComponent(Movement)?.speed ?? 0;
         const enemyLevel = (window as any).playerLevel ?? 1;
 
         const levelMultiplier = Math.pow(1.1, enemyLevel - 1);

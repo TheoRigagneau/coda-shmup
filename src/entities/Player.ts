@@ -19,7 +19,6 @@ export default class Player extends Entity {
         damage: 1
     };
 
-    private readonly _cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
     private _playerShipData: PlayerShipData;
     private _rateOfFire: number;
     private _lastShotTime: number;
@@ -144,7 +143,6 @@ export default class Player extends Entity {
 
         
 
-        const camera = this.scene.cameras.main;
         this.x = Phaser.Math.Clamp(this.x, this.displayWidth / 2, GameConstants.ARENA_WIDTH - this.displayWidth / 2);
         this.y = Phaser.Math.Clamp(this.y, this.displayHeight / 2,GameConstants.ARENA_HEIGHT - this.displayHeight / 2);
 
