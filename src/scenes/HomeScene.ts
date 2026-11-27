@@ -300,11 +300,24 @@ export default class HomeScene extends Phaser.Scene {
         const closeDetails = () => {
             detailsObjects.forEach(object => object.destroy());
             detailsObjects = [];
+
+            // Réafficher le formulaire
+            form.setVisible(true);
+            root.style.setProperty("display", "block", "important");
+            input.style.setProperty("display", "block", "important");
         };
 
         
     const showClassDetails = (playerClass: typeof classes[number]) => {
         closeDetails();
+
+        // Masquer complètement le champ pseudo
+        input.blur();
+
+        form.setVisible(false);
+
+        root.style.setProperty("display", "none", "important");
+        input.style.setProperty("display", "none", "important");
 
         // Fond sombre
         const overlay = this.add.rectangle(
@@ -361,7 +374,7 @@ export default class HomeScene extends Phaser.Scene {
             centerY - 85,
             playerClass.bonus,
             {
-                fontFamily: "future",
+                fontFamily: "Arial",
                 fontSize: "46px",
                 color: "#ffffff",
                 align: "center"
@@ -556,6 +569,7 @@ export default class HomeScene extends Phaser.Scene {
             started = true;
 
             closeDetails();
+            form.setVisible(false);
 
             // SAUVEGARDE DU PSEUDO
             try {
