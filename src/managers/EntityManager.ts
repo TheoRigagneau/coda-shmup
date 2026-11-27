@@ -3,6 +3,8 @@ import Health from "../components/Health.ts";
 import Bullet from "../entities/Bullet.ts";
 import Enemy from "../entities/Enemy.ts";
 import Player from "../entities/Player.ts";
+import SinusoidalEnemy from "../entities/SinusoidalEnemy.ts";
+import type {SinusoidalEnemyData} from "../gameData/SinusoidalEnemyData.ts";
 import GroupUtils from "../utils/GroupUtils.ts";
 import GameConstants from "../GameConstants.ts";
 import RegistryConstants from "../RegistryConstants.ts";
@@ -24,6 +26,7 @@ export default class EntityManager extends Plugins.ScenePlugin {
     private _player: Player;
     private _playerBullets: Physics.Arcade.Group;
     private _enemies: Physics.Arcade.Group;
+    private _sinusoidalEnemies: Physics.Arcade.Group;
     private _enemyBullets: Physics.Arcade.Group;
 
     constructor(scene: Scene, pluginManager: Plugins.PluginManager) {
@@ -65,10 +68,27 @@ export default class EntityManager extends Plugins.ScenePlugin {
             }
         });
 
+        const sinusoidalEnemyData = this.scene!.cache.json.get("sinusoidalEnemy") as SinusoidalEnemyData;
+        this._sinusoidalEnemies = this.scene!.physics.add.group({
+            classType: SinusoidalEnemy,
+            defaultKey: "sprites",
+            defaultFrame: sinusoidalEnemyData.texture,
+            createCallback: (enemy) => {
+                (enemy as SinusoidalEnemy).init(sinusoidalEnemyData, this._enemyBullets);
+            }
+        });
+
         // Spawn enemies indefinitely
         this.scene!.time.addEvent({
             delay: 1500,
             callback: this.spawnEnemy,
+            callbackScope: this,
+            loop: true
+        });
+
+        this.scene!.time.addEvent({
+            delay: sinusoidalEnemyData.spawnIntervalMs,
+            callback: this.spawnSinusoidalEnemy,
             callbackScope: this,
             loop: true
         });
@@ -84,6 +104,13 @@ export default class EntityManager extends Plugins.ScenePlugin {
 
             (bullet as Bullet).disable();
             (enemy as Enemy).getComponent(Health)?.damage((bullet as Bullet).damage);
+        });
+
+        this.scene!.physics.add.overlap(this._playerBullets, this._sinusoidalEnemies, (bullet, enemy) => {
+            this.scene!.registry.inc(RegistryConstants.Keys.PLAYER_SCORE);
+
+            (bullet as Bullet).disable();
+            (enemy as SinusoidalEnemy).getComponent(Health)?.damage((bullet as Bullet).damage);
         });
 
         this.scene!.physics.add.overlap(this._player, this._enemyBullets, (player, bullet) => {
@@ -105,6 +132,16 @@ export default class EntityManager extends Plugins.ScenePlugin {
             this.scene?.cameras.main.shake(100, 0.03);
         });
 
+        this.scene!.physics.add.overlap(this._player, this._sinusoidalEnemies, (player, enemy) => {
+            this.scene!.registry.inc(RegistryConstants.Keys.PLAYER_SCORE);
+
+            const enemyHealth = (enemy as SinusoidalEnemy).getComponent(Health);
+            enemyHealth?.damage(enemyHealth.max);
+
+            (player as Player).getComponent(Health)?.damage(1);
+            this.scene?.cameras.main.shake(100, 0.03);
+        });
+
         console.log("[EntityManager] Group collisions initialized");
     }
 
@@ -123,5 +160,25 @@ export default class EntityManager extends Plugins.ScenePlugin {
         this.game!.events.emit(GameConstants.Events.ENEMY_SPAWNED_EVENT, enemy);
 
         console.log("[EntityManager] Enemy spawned");
+    }
+
+    private spawnSinusoidalEnemy(): void {
+        const data = this.scene!.cache.json.get("sinusoidalEnemy") as SinusoidalEnemyData;
+        if (this._sinusoidalEnemies.countActive(true) >= data.maxActive)
+            return;
+
+        const enemy = this._sinusoidalEnemies.get() as SinusoidalEnemy;
+        if (!enemy)
+            return;
+
+        const horizontalMargin = data.movement.horizontalAmplitude + 64;
+        const spawnX = Phaser.Math.Between(
+            horizontalMargin,
+            this.scene!.cameras.main.width - horizontalMargin
+        );
+        enemy.enable(spawnX, 0);
+
+        this.game!.events.emit(GameConstants.Events.ENEMY_SPAWNED_EVENT, enemy);
+        console.log("[EntityManager] Sinusoidal enemy spawned");
     }
 }
